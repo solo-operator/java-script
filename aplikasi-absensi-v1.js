@@ -3,11 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-// TypeScript declarations for global libraries
-declare const html2canvas: any;
-declare const jspdf: any;
-declare const Chart: any;
-declare const XLSX: any;
+// Global libraries (html2canvas, jspdf, Chart, XLSX) are loaded via script tags in index.html
 
 document.addEventListener('DOMContentLoaded', function () {
     const STORAGE_KEY = 'fingerprintReportAppState';
@@ -88,8 +84,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (savedData.absensi) state.absensi = savedData.absensi;
                 if (savedData.kehadiranOverrides) state.kehadiranOverrides = savedData.kehadiranOverrides;
             }
-        } catch (e)
-{
+        } catch (e) {
             console.error("Error loading state from localStorage", e);
              showCustomAlert('error', 'Gagal Memuat Data', 'Data yang tersimpan sebelumnya rusak dan tidak dapat dimuat.');
         }
@@ -108,9 +103,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const nav = document.querySelector('nav');
     const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
     const mobileMenuClose = document.getElementById('mobile-menu-close');
-    const headerLogo = document.getElementById('header-logo') as HTMLImageElement;
+    const headerLogo = document.getElementById('header-logo');
     const headerSchoolName = document.getElementById('header-school-name');
-    const favicon = document.getElementById('favicon') as HTMLLinkElement;
+    const favicon = document.getElementById('favicon');
     const LOGO_PLACEHOLDER = `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23adb5bd' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'%3e%3c/path%3e%3cpolyline points='9 22 9 12 15 12 15 22'%3e%3c/polyline%3e%3c/svg%3e`;
     
     // --- CUSTOM ALERT ---
@@ -253,7 +248,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Event listeners
         paginationContainer.querySelectorAll('.pagination-btn').forEach(button => {
             button.addEventListener('click', () => {
-                const page = parseInt((button as HTMLElement).dataset.page, 10);
+                const page = parseInt(button.dataset.page, 10);
                 if (page && page !== uiState.currentPage) {
                     uiState.currentPage = page;
                     renderGuruList(); // Specific to guru page
@@ -262,11 +257,11 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         // Add event listener for the "select all" checkbox
-        const selectAllCheckbox = container.querySelector(`#select-all-${itemName}`) as HTMLInputElement;
+        const selectAllCheckbox = container.querySelector(`#select-all-${itemName}`);
         if (selectAllCheckbox) {
             selectAllCheckbox.addEventListener('change', () => {
                 // Select/deselect all items on the CURRENT page
-                const visibleCheckboxes = container.querySelectorAll(`.${itemName}-checkbox`) as NodeListOf<HTMLInputElement>;
+                const visibleCheckboxes = container.querySelectorAll(`.${itemName}-checkbox`);
                 visibleCheckboxes.forEach(checkbox => {
                     const id = checkbox.dataset.id;
                     if (selectAllCheckbox.checked) {
@@ -285,12 +280,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     function handleImageUpload(inputElement, previewElement, callback) {
         inputElement.addEventListener('change', function(event) {
-            const file = (event.target as HTMLInputElement).files[0];
+            const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = e => {
-                    previewElement.src = e.target.result as string;
-                    if (callback) callback(e.target.result as string);
+                    previewElement.src = e.target.result;
+                    if (callback) callback(e.target.result);
                 };
                 reader.readAsDataURL(file);
             }
@@ -528,7 +523,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Chart
         const chartData = getWeeklyAttendanceData();
-        const ctx = (document.getElementById('kehadiranChart') as HTMLCanvasElement).getContext('2d');
+        const ctx = document.getElementById('kehadiranChart').getContext('2d');
         if (kehadiranChart) kehadiranChart.destroy();
         
         kehadiranChart = new Chart(ctx, {
@@ -568,9 +563,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const processedData = processAbsensi(state.absensi, state.guru.map(g => g.id), startDate, endDate);
         let hadirCount = 0;
         if (processedData) {
-            Object.values(processedData).forEach((guruData: any) => {
+            Object.values(processedData).forEach(guruData => {
                 if (guruData && guruData.days) {
-                    Object.values(guruData.days).forEach((dayData: any) => {
+                    Object.values(guruData.days).forEach(dayData => {
                         if (dayData.keterangan === 'Hadir' || dayData.keterangan === 'Terlambat') {
                             hadirCount++;
                         }
@@ -594,7 +589,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const processedData = processAbsensi(state.absensi, state.guru.map(g => g.id), firstDayUTC, lastDayUTC);
         
         if (processedData) {
-            Object.values(processedData).forEach((guruData: any) => {
+            Object.values(processedData).forEach(guruData => {
                  if (guruData && guruData.summary) {
                     absenCount += guruData.summary.absen;
                     terlambatCount += guruData.summary.terlambat;
@@ -676,22 +671,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function openGuruModal(guruId = null) {
         const modal = document.getElementById('guru-modal');
-        const form = document.getElementById('form-guru') as HTMLFormElement;
-        const idUnikInput = document.getElementById('guru-id-unik') as HTMLInputElement;
+        const form = document.getElementById('form-guru');
+        const idUnikInput = document.getElementById('guru-id-unik');
         form.reset();
-        (document.getElementById('guru-id-hidden') as HTMLInputElement).value = '';
+        document.getElementById('guru-id-hidden').value = '';
         
         if (guruId) {
             const guru = state.guru.find(g => g.id === guruId);
             if (guru) {
                 document.getElementById('guru-modal-title').textContent = 'Edit Data Guru';
-                (document.getElementById('guru-id-hidden') as HTMLInputElement).value = guru.id;
+                document.getElementById('guru-id-hidden').value = guru.id;
                 idUnikInput.value = guru.id;
                 idUnikInput.readOnly = true; // Prevent editing primary key
-                (document.getElementById('guru-nip') as HTMLInputElement).value = guru.nip;
-                (document.getElementById('guru-nama') as HTMLInputElement).value = guru.nama;
-                (document.getElementById('guru-jabatan') as HTMLInputElement).value = guru.jabatan;
-                (document.getElementById('guru-jenis') as HTMLSelectElement).value = guru.jenisGuru;
+                document.getElementById('guru-nip').value = guru.nip;
+                document.getElementById('guru-nama').value = guru.nama;
+                document.getElementById('guru-jabatan').value = guru.jabatan;
+                document.getElementById('guru-jenis').value = guru.jenisGuru;
             }
         } else {
             document.getElementById('guru-modal-title').textContent = 'Input Guru Baru';
@@ -701,12 +696,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function saveGuru() {
-        const originalId = (document.getElementById('guru-id-hidden') as HTMLInputElement).value;
-        const idUnik = (document.getElementById('guru-id-unik') as HTMLInputElement).value.trim();
-        const nip = (document.getElementById('guru-nip') as HTMLInputElement).value.trim();
-        const nama = (document.getElementById('guru-nama') as HTMLInputElement).value.trim();
-        const jabatan = (document.getElementById('guru-jabatan') as HTMLInputElement).value.trim();
-        const jenisGuru = (document.getElementById('guru-jenis') as HTMLSelectElement).value;
+        const originalId = document.getElementById('guru-id-hidden').value;
+        const idUnik = document.getElementById('guru-id-unik').value.trim();
+        const nip = document.getElementById('guru-nip').value.trim();
+        const nama = document.getElementById('guru-nama').value.trim();
+        const jabatan = document.getElementById('guru-jabatan').value.trim();
+        const jenisGuru = document.getElementById('guru-jenis').value;
 
         if (!idUnik || !nama) {
             showCustomAlert('error', 'Data Tidak Lengkap', 'No. ID Unik dan Nama Lengkap wajib diisi.');
@@ -775,7 +770,7 @@ document.addEventListener('DOMContentLoaded', function () {
             state.guru.map(g => `<option value="${g.id}">${g.nama} (${g.id})</option>`).join('');
 
         const now = new Date();
-        const monthInput = document.getElementById('manual-absensi-bulan') as HTMLInputElement;
+        const monthInput = document.getElementById('manual-absensi-bulan');
         if (!monthInput.value) {
             monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
         }
@@ -949,25 +944,25 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- PENGATURAN PAGES ---
     function renderIdentitasPage() {
         const s = state.sekolah;
-        (document.getElementById('nama-dinas') as HTMLInputElement).value = s.namaDinas || '';
-        (document.getElementById('nama-yayasan') as HTMLInputElement).value = s.namaYayasan || '';
-        (document.getElementById('nama-sekolah') as HTMLInputElement).value = s.nama;
-        (document.getElementById('akreditasi-sekolah') as HTMLInputElement).value = s.akreditasi || '';
-        (document.getElementById('alamat-sekolah') as HTMLInputElement).value = s.alamat;
-        (document.getElementById('desa') as HTMLInputElement).value = s.desa || '';
-        (document.getElementById('kecamatan') as HTMLInputElement).value = s.kecamatan;
-        (document.getElementById('kabupaten') as HTMLInputElement).value = s.kabupaten || '';
-        (document.getElementById('provinsi') as HTMLInputElement).value = s.provinsi || '';
-        (document.getElementById('kode-pos') as HTMLInputElement).value = s.kodePos || '';
-        (document.getElementById('kontak') as HTMLInputElement).value = s.kontak || '';
-        (document.getElementById('faksimile') as HTMLInputElement).value = s.faksimile || '';
-        (document.getElementById('email') as HTMLInputElement).value = s.email || '';
-        (document.getElementById('website') as HTMLInputElement).value = s.website || '';
-        (document.getElementById('kepala-sekolah') as HTMLInputElement).value = s.kepsek;
-        (document.getElementById('nip-kepsek') as HTMLInputElement).value = s.nip;
-        (document.getElementById('nama-pengawas') as HTMLInputElement).value = s.pengawas;
-        (document.getElementById('nip-pengawas') as HTMLInputElement).value = s.nipPengawas;
-        (document.getElementById('logo-preview') as HTMLImageElement).src = s.logo || LOGO_PLACEHOLDER;
+        document.getElementById('nama-dinas').value = s.namaDinas || '';
+        document.getElementById('nama-yayasan').value = s.namaYayasan || '';
+        document.getElementById('nama-sekolah').value = s.nama;
+        document.getElementById('akreditasi-sekolah').value = s.akreditasi || '';
+        document.getElementById('alamat-sekolah').value = s.alamat;
+        document.getElementById('desa').value = s.desa || '';
+        document.getElementById('kecamatan').value = s.kecamatan;
+        document.getElementById('kabupaten').value = s.kabupaten || '';
+        document.getElementById('provinsi').value = s.provinsi || '';
+        document.getElementById('kode-pos').value = s.kodePos || '';
+        document.getElementById('kontak').value = s.kontak || '';
+        document.getElementById('faksimile').value = s.faksimile || '';
+        document.getElementById('email').value = s.email || '';
+        document.getElementById('website').value = s.website || '';
+        document.getElementById('kepala-sekolah').value = s.kepsek;
+        document.getElementById('nip-kepsek').value = s.nip;
+        document.getElementById('nama-pengawas').value = s.pengawas;
+        document.getElementById('nip-pengawas').value = s.nipPengawas;
+        document.getElementById('logo-preview').src = s.logo || LOGO_PLACEHOLDER;
     }
 
     function renderJadwalPage() {
@@ -979,33 +974,33 @@ document.addEventListener('DOMContentLoaded', function () {
                 ${hari}
             </label>
         `).join('');
-        (document.getElementById('jam-masuk-reguler') as HTMLInputElement).value = p.jamMasukReguler;
-        (document.getElementById('jam-pulang-reguler') as HTMLInputElement).value = p.jamPulangReguler;
-        (document.getElementById('jam-masuk-honorer') as HTMLInputElement).value = p.jamMasukHonorer;
-        (document.getElementById('jam-pulang-honorer') as HTMLInputElement).value = p.jamPulangHonorer;
-        (document.getElementById('toleransi-terlambat') as HTMLInputElement).value = p.toleransi.toString();
+        document.getElementById('jam-masuk-reguler').value = p.jamMasukReguler;
+        document.getElementById('jam-pulang-reguler').value = p.jamPulangReguler;
+        document.getElementById('jam-masuk-honorer').value = p.jamMasukHonorer;
+        document.getElementById('jam-pulang-honorer').value = p.jamPulangHonorer;
+        document.getElementById('toleransi-terlambat').value = p.toleransi.toString();
     }
     
     function saveIdentitas() {
-        state.sekolah.namaDinas = (document.getElementById('nama-dinas') as HTMLInputElement).value.trim();
-        state.sekolah.namaYayasan = (document.getElementById('nama-yayasan') as HTMLInputElement).value.trim();
-        state.sekolah.nama = (document.getElementById('nama-sekolah') as HTMLInputElement).value.trim();
-        state.sekolah.akreditasi = (document.getElementById('akreditasi-sekolah') as HTMLInputElement).value.trim();
-        state.sekolah.alamat = (document.getElementById('alamat-sekolah') as HTMLInputElement).value.trim();
-        state.sekolah.desa = (document.getElementById('desa') as HTMLInputElement).value.trim();
-        state.sekolah.kecamatan = (document.getElementById('kecamatan') as HTMLInputElement).value.trim();
-        state.sekolah.kabupaten = (document.getElementById('kabupaten') as HTMLInputElement).value.trim();
-        state.sekolah.provinsi = (document.getElementById('provinsi') as HTMLInputElement).value.trim();
-        state.sekolah.kodePos = (document.getElementById('kode-pos') as HTMLInputElement).value.trim();
-        state.sekolah.kontak = (document.getElementById('kontak') as HTMLInputElement).value.trim();
-        state.sekolah.faksimile = (document.getElementById('faksimile') as HTMLInputElement).value.trim();
-        state.sekolah.email = (document.getElementById('email') as HTMLInputElement).value.trim();
-        state.sekolah.website = (document.getElementById('website') as HTMLInputElement).value.trim();
-        state.sekolah.kepsek = (document.getElementById('kepala-sekolah') as HTMLInputElement).value.trim();
-        state.sekolah.nip = (document.getElementById('nip-kepsek') as HTMLInputElement).value.trim();
-        state.sekolah.pengawas = (document.getElementById('nama-pengawas') as HTMLInputElement).value.trim();
-        state.sekolah.nipPengawas = (document.getElementById('nip-pengawas') as HTMLInputElement).value.trim();
-        const logoPreviewSrc = (document.getElementById('logo-preview') as HTMLImageElement).src;
+        state.sekolah.namaDinas = document.getElementById('nama-dinas').value.trim();
+        state.sekolah.namaYayasan = document.getElementById('nama-yayasan').value.trim();
+        state.sekolah.nama = document.getElementById('nama-sekolah').value.trim();
+        state.sekolah.akreditasi = document.getElementById('akreditasi-sekolah').value.trim();
+        state.sekolah.alamat = document.getElementById('alamat-sekolah').value.trim();
+        state.sekolah.desa = document.getElementById('desa').value.trim();
+        state.sekolah.kecamatan = document.getElementById('kecamatan').value.trim();
+        state.sekolah.kabupaten = document.getElementById('kabupaten').value.trim();
+        state.sekolah.provinsi = document.getElementById('provinsi').value.trim();
+        state.sekolah.kodePos = document.getElementById('kode-pos').value.trim();
+        state.sekolah.kontak = document.getElementById('kontak').value.trim();
+        state.sekolah.faksimile = document.getElementById('faksimile').value.trim();
+        state.sekolah.email = document.getElementById('email').value.trim();
+        state.sekolah.website = document.getElementById('website').value.trim();
+        state.sekolah.kepsek = document.getElementById('kepala-sekolah').value.trim();
+        state.sekolah.nip = document.getElementById('nip-kepsek').value.trim();
+        state.sekolah.pengawas = document.getElementById('nama-pengawas').value.trim();
+        state.sekolah.nipPengawas = document.getElementById('nip-pengawas').value.trim();
+        const logoPreviewSrc = document.getElementById('logo-preview').src;
         if (logoPreviewSrc !== LOGO_PLACEHOLDER) {
             state.sekolah.logo = logoPreviewSrc;
         }
@@ -1016,12 +1011,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function saveJadwal() {
-        state.pengaturanKerja.hariKerja = Array.from(document.querySelectorAll('#hari-kerja-container input:checked')).map(cb => (cb as HTMLInputElement).value);
-        state.pengaturanKerja.jamMasukReguler = (document.getElementById('jam-masuk-reguler') as HTMLInputElement).value;
-        state.pengaturanKerja.jamPulangReguler = (document.getElementById('jam-pulang-reguler') as HTMLInputElement).value;
-        state.pengaturanKerja.jamMasukHonorer = (document.getElementById('jam-masuk-honorer') as HTMLInputElement).value;
-        state.pengaturanKerja.jamPulangHonorer = (document.getElementById('jam-pulang-honorer') as HTMLInputElement).value;
-        state.pengaturanKerja.toleransi = parseInt((document.getElementById('toleransi-terlambat') as HTMLInputElement).value, 10) || 0;
+        state.pengaturanKerja.hariKerja = Array.from(document.querySelectorAll('#hari-kerja-container input:checked')).map(cb => cb.value);
+        state.pengaturanKerja.jamMasukReguler = document.getElementById('jam-masuk-reguler').value;
+        state.pengaturanKerja.jamPulangReguler = document.getElementById('jam-pulang-reguler').value;
+        state.pengaturanKerja.jamMasukHonorer = document.getElementById('jam-masuk-honorer').value;
+        state.pengaturanKerja.jamPulangHonorer = document.getElementById('jam-pulang-honorer').value;
+        state.pengaturanKerja.toleransi = parseInt(document.getElementById('toleransi-terlambat').value, 10) || 0;
         
         saveState();
         showCustomAlert('success', 'Berhasil', 'Jadwal & jam kerja telah disimpan.');
@@ -1030,7 +1025,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function adjustKeteranganFontSize() {
         const keteranganCells = document.querySelectorAll('.kolom-keterangan');
         keteranganCells.forEach(cell => {
-            const htmlCell = cell as HTMLElement;
+            const htmlCell = cell;
             const text = htmlCell.dataset.keterangan || '';
             if (text.length > 20) {
                 htmlCell.style.fontSize = '7pt';
@@ -1063,7 +1058,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 state.guru.map(g => `<option value="${g.id}">${g.nama} (${g.id})</option>`).join('');
             
             const now = new Date();
-            const monthInput = document.getElementById('cetak-pilih-bulan') as HTMLInputElement;
+            const monthInput = document.getElementById('cetak-pilih-bulan');
             if (!monthInput.value) {
                 monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             }
@@ -1074,8 +1069,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     
     function tampilkanLaporan() {
-        const id = (document.getElementById('cetak-pilih-guru') as HTMLSelectElement).value;
-        const monthValue = (document.getElementById('cetak-pilih-bulan') as HTMLInputElement).value;
+        const id = document.getElementById('cetak-pilih-guru').value;
+        const monthValue = document.getElementById('cetak-pilih-bulan').value;
 
         if (!id) {
             showCustomAlert('warning', 'Guru Belum Dipilih', 'Silakan pilih guru terlebih dahulu.');
@@ -1099,7 +1094,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function tampilkanLaporanMulti() {
         const ids = state.ui.cetak.selectedIds;
-        const [year, month] = (document.getElementById('cetak-pilih-bulan') as HTMLInputElement).value.split('-').map(Number);
+        const [year, month] = document.getElementById('cetak-pilih-bulan').value.split('-').map(Number);
         
         const lastDay = new Date(year, month, 0).getDate();
         const startDate = new Date(Date.UTC(year, month - 1, 1));
@@ -1144,7 +1139,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 state.guru.map(g => `<option value="${g.id}">${g.nama} (${g.id})</option>`).join('');
             
             const now = new Date();
-            const monthInput = document.getElementById('cetak-pilih-bulan-v2') as HTMLInputElement;
+            const monthInput = document.getElementById('cetak-pilih-bulan-v2');
             if (!monthInput.value) {
                 monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             }
@@ -1155,8 +1150,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function tampilkanLaporanV2() {
-        const id = (document.getElementById('cetak-pilih-guru-v2') as HTMLSelectElement).value;
-        const monthValue = (document.getElementById('cetak-pilih-bulan-v2') as HTMLInputElement).value;
+        const id = document.getElementById('cetak-pilih-guru-v2').value;
+        const monthValue = document.getElementById('cetak-pilih-bulan-v2').value;
 
         if (!id) {
             showCustomAlert('warning', 'Guru Belum Dipilih', 'Silakan pilih guru terlebih dahulu.');
@@ -1180,7 +1175,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function tampilkanLaporanMultiV2() {
         const ids = state.ui.cetakV2.selectedIds;
-        const [year, month] = (document.getElementById('cetak-pilih-bulan-v2') as HTMLInputElement).value.split('-').map(Number);
+        const [year, month] = document.getElementById('cetak-pilih-bulan-v2').value.split('-').map(Number);
         
         const lastDay = new Date(year, month, 0).getDate();
         const startDate = new Date(Date.UTC(year, month - 1, 1));
@@ -1225,7 +1220,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 state.guru.map(g => `<option value="${g.id}">${g.nama} (${g.id})</option>`).join('');
             
             const now = new Date();
-            const monthInput = document.getElementById('cetak-pilih-bulan-v3') as HTMLInputElement;
+            const monthInput = document.getElementById('cetak-pilih-bulan-v3');
             if (!monthInput.value) {
                 monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             }
@@ -1236,8 +1231,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function tampilkanLaporanV3() {
-        const id = (document.getElementById('cetak-pilih-guru-v3') as HTMLSelectElement).value;
-        const monthValue = (document.getElementById('cetak-pilih-bulan-v3') as HTMLInputElement).value;
+        const id = document.getElementById('cetak-pilih-guru-v3').value;
+        const monthValue = document.getElementById('cetak-pilih-bulan-v3').value;
 
         if (!id) {
             showCustomAlert('warning', 'Guru Belum Dipilih', 'Silakan pilih guru terlebih dahulu.');
@@ -1261,7 +1256,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function tampilkanLaporanMultiV3() {
         const ids = state.ui.cetakV3.selectedIds;
-        const [year, month] = (document.getElementById('cetak-pilih-bulan-v3') as HTMLInputElement).value.split('-').map(Number);
+        const [year, month] = document.getElementById('cetak-pilih-bulan-v3').value.split('-').map(Number);
         
         const lastDay = new Date(year, month, 0).getDate();
         const startDate = new Date(Date.UTC(year, month - 1, 1));
@@ -1306,7 +1301,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 state.guru.map(g => `<option value="${g.id}">${g.nama} (${g.id})</option>`).join('');
             
             const now = new Date();
-            const monthInput = document.getElementById('cetak-pilih-bulan-v4') as HTMLInputElement;
+            const monthInput = document.getElementById('cetak-pilih-bulan-v4');
             if (!monthInput.value) {
                 monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             }
@@ -1317,8 +1312,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function tampilkanLaporanV4() {
-        const id = (document.getElementById('cetak-pilih-guru-v4') as HTMLSelectElement).value;
-        const monthValue = (document.getElementById('cetak-pilih-bulan-v4') as HTMLInputElement).value;
+        const id = document.getElementById('cetak-pilih-guru-v4').value;
+        const monthValue = document.getElementById('cetak-pilih-bulan-v4').value;
 
         if (!id) {
             showCustomAlert('warning', 'Guru Belum Dipilih', 'Silakan pilih guru terlebih dahulu.');
@@ -1342,7 +1337,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function tampilkanLaporanMultiV4() {
         const ids = state.ui.cetakV4.selectedIds;
-        const [year, month] = (document.getElementById('cetak-pilih-bulan-v4') as HTMLInputElement).value.split('-').map(Number);
+        const [year, month] = document.getElementById('cetak-pilih-bulan-v4').value.split('-').map(Number);
         
         const lastDay = new Date(year, month, 0).getDate();
         const startDate = new Date(Date.UTC(year, month - 1, 1));
@@ -1409,7 +1404,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		const lamanSekolah = (`<p>Website: ${[s.website].filter(Boolean).join(', ')}</p>`);
 
 		
-        const rows = Object.entries(data.days).map(([dateStr, dayData]: [string, unknown]) => {
+        const rows = Object.entries(data.days).map(([dateStr, dayData]) => {
             const [y, m, day] = dateStr.split('-').map(Number);
             const tgl = new Date(Date.UTC(y, m - 1, day));
             const formattedDate = `${String(tgl.getUTCDate()).padStart(2, '0')}/${String(tgl.getUTCMonth() + 1).padStart(2, '0')}/${tgl.getUTCFullYear()}`;
@@ -1418,15 +1413,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 <tr>
                     <td style="text-align:center;">${formattedDate}</td>
                     <td style="text-align:center;">${HARI[tgl.getUTCDay()]}</td>
-                    <td>${(dayData as any).jamKerjaMasuk}</td>
-                    <td>${(dayData as any).jamKerjaPulang}</td>
-                    <td>${(dayData as any).scanMasuk}</td>
-                    <td>${(dayData as any).scanKeluar}</td>
-                    <td>${(dayData as any).terlambat}</td>
-                    <td>${(dayData as any).plgCpt}</td>
-                    <td>${(dayData as any).lembur}</td>
-                    <td>${(dayData as any).jmlHadir}</td>
-                    <td data-keterangan="${(dayData as any).keterangan}" class="kolom-keterangan">${(dayData as any).keterangan}</td>
+                    <td>${dayData.jamKerjaMasuk}</td>
+                    <td>${dayData.jamKerjaPulang}</td>
+                    <td>${dayData.scanMasuk}</td>
+                    <td>${dayData.scanKeluar}</td>
+                    <td>${dayData.terlambat}</td>
+                    <td>${dayData.plgCpt}</td>
+                    <td>${dayData.lembur}</td>
+                    <td>${dayData.jmlHadir}</td>
+                    <td data-keterangan="${dayData.keterangan}" class="kolom-keterangan">${dayData.keterangan}</td>
                 </tr>
             `;
         }).join('');
@@ -1587,7 +1582,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		const lamanSekolah = (`<p>Website: ${[s.website].filter(Boolean).join(', ')}</p>`);
 
 		
-        const rows = Object.entries(data.days).map(([dateStr, dayData]: [string, unknown]) => {
+        const rows = Object.entries(data.days).map(([dateStr, dayData]) => {
             const [y, m, day] = dateStr.split('-').map(Number);
             const tgl = new Date(Date.UTC(y, m - 1, day));
             const formattedDate = `${String(tgl.getUTCDate()).padStart(2, '0')}/${String(tgl.getUTCMonth() + 1).padStart(2, '0')}/${tgl.getUTCFullYear()}`;
@@ -1596,15 +1591,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 <tr>
                     <td style="text-align:center;">${formattedDate}</td>
                     <td style="text-align:center;">${HARI[tgl.getUTCDay()]}</td>
-                    <td>${(dayData as any).jamKerjaMasuk}</td>
-                    <td>${(dayData as any).jamKerjaPulang}</td>
-                    <td>${(dayData as any).scanMasuk}</td>
-                    <td>${(dayData as any).scanKeluar}</td>
-                    <td>${(dayData as any).terlambat}</td>
-                    <td>${(dayData as any).plgCpt}</td>
-                    <td>${(dayData as any).lembur}</td>
-                    <td>${(dayData as any).jmlHadir}</td>
-                    <td data-keterangan="${(dayData as any).keterangan}" class="kolom-keterangan">${(dayData as any).keterangan}</td>
+                    <td>${dayData.jamKerjaMasuk}</td>
+                    <td>${dayData.jamKerjaPulang}</td>
+                    <td>${dayData.scanMasuk}</td>
+                    <td>${dayData.scanKeluar}</td>
+                    <td>${dayData.terlambat}</td>
+                    <td>${dayData.plgCpt}</td>
+                    <td>${dayData.lembur}</td>
+                    <td>${dayData.jmlHadir}</td>
+                    <td data-keterangan="${dayData.keterangan}" class="kolom-keterangan">${dayData.keterangan}</td>
                 </tr>
             `;
         }).join('');
@@ -1744,7 +1739,7 @@ document.addEventListener('DOMContentLoaded', function () {
         };
         const formattedFooterEndDate = formatFooterDate(endDate);
 
-        const rows = Object.entries(data.days).map(([dateStr, dayData]: [string, unknown]) => {
+        const rows = Object.entries(data.days).map(([dateStr, dayData]) => {
             const [y, m, day] = dateStr.split('-').map(Number);
             const tgl = new Date(Date.UTC(y, m - 1, day));
             const formattedDate = `${String(tgl.getUTCDate()).padStart(2, '0')}/${String(tgl.getUTCMonth() + 1).padStart(2, '0')}/${tgl.getUTCFullYear()}`;
@@ -1753,15 +1748,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 <tr>
                     <td style="text-align:center;">${formattedDate}</td>
                     <td style="text-align:center;">${HARI[tgl.getUTCDay()]}</td>
-                    <td>${(dayData as any).jamKerjaMasuk}</td>
-                    <td>${(dayData as any).jamKerjaPulang}</td>
-                    <td>${(dayData as any).scanMasuk}</td>
-                    <td>${(dayData as any).scanKeluar}</td>
-                    <td>${(dayData as any).terlambat}</td>
-                    <td>${(dayData as any).plgCpt}</td>
-                    <td>${(dayData as any).lembur}</td>
-                    <td>${(dayData as any).jmlHadir}</td>
-                    <td data-keterangan="${(dayData as any).keterangan}" class="kolom-keterangan">${(dayData as any).keterangan}</td>
+                    <td>${dayData.jamKerjaMasuk}</td>
+                    <td>${dayData.jamKerjaPulang}</td>
+                    <td>${dayData.scanMasuk}</td>
+                    <td>${dayData.scanKeluar}</td>
+                    <td>${dayData.terlambat}</td>
+                    <td>${dayData.plgCpt}</td>
+                    <td>${dayData.lembur}</td>
+                    <td>${dayData.jmlHadir}</td>
+                    <td data-keterangan="${dayData.keterangan}" class="kolom-keterangan">${dayData.keterangan}</td>
                 </tr>
             `;
         }).join('');
@@ -1882,7 +1877,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const formatFooterDate = (date) => `${String(date.getUTCDate()).padStart(2, '0')}/${String(date.getUTCMonth() + 1).padStart(2, '0')}/${date.getUTCFullYear()}`;
         const formattedFooterEndDate = formatFooterDate(endDate);
 
-        const rows = Object.entries(data.days).map(([dateStr, dayData]: [string, any]) => {
+        const rows = Object.entries(data.days).map(([dateStr, dayData]) => {
             const [y, m, day] = dateStr.split('-').map(Number);
             const tgl = new Date(Date.UTC(y, m - 1, day));
             const formattedDate = `${String(tgl.getUTCDate()).padStart(2, '0')}/${String(tgl.getUTCMonth() + 1).padStart(2, '0')}/${tgl.getUTCFullYear()}`;
@@ -2019,7 +2014,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     
         for (let i = 0; i < reportElements.length; i++) {
-            const reportElement = reportElements[i] as HTMLElement;
+            const reportElement = reportElements[i];
     
             try {
                 const canvas = await html2canvas(reportElement, {
@@ -2047,8 +2042,8 @@ document.addEventListener('DOMContentLoaded', function () {
     
         // Dynamic filename generation
         const parentSection = reportWrapper.closest('section');
-        const monthInput = parentSection?.querySelector('input[type="month"]') as HTMLInputElement;
-        const guruSelect = parentSection?.querySelector('select') as HTMLSelectElement;
+        const monthInput = parentSection?.querySelector('input[type="month"]');
+        const guruSelect = parentSection?.querySelector('select');
         
         let fileName = `${baseFileName}.pdf`;
     
@@ -2089,7 +2084,7 @@ document.addEventListener('DOMContentLoaded', function () {
     
     document.addEventListener('click', (e) => {
         if (body.classList.contains('mobile-nav-open')) {
-            const target = e.target as HTMLElement;
+            const target = e.target;
             // Close if clicking outside the nav and not on the toggle button
             if (!target.closest('nav') && !target.closest('#mobile-menu-toggle')) {
                 body.classList.remove('mobile-nav-open');
@@ -2105,19 +2100,20 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('btn-input-guru-baru').addEventListener('click', () => openGuruModal());
     document.getElementById('btn-close-guru-modal').addEventListener('click', () => document.getElementById('guru-modal').classList.add('hidden'));
     document.getElementById('btn-cancel-guru-modal').addEventListener('click', () => document.getElementById('guru-modal').classList.add('hidden'));
-    document.getElementById('form-guru').addEventListener('submit', (e) => { e.preventDefault(); saveGuru(); });
+    document.getElementById('form-guru').addEventListener('submit', (e) => { e.preventDefault(); });
+    document.getElementById('btn-save-guru').addEventListener('click', saveGuru);
     
     document.getElementById('daftar-guru-container').addEventListener('click', (e) => {
-        const target = e.target as HTMLElement;
+        const target = e.target;
         const editBtn = target.closest('.btn-edit');
         const deleteBtn = target.closest('.btn-delete');
-        const checkbox = target.closest('.guru-checkbox') as HTMLInputElement;
+        const checkbox = target.closest('.guru-checkbox');
         const row = target.closest('tr');
 
         if (editBtn) {
-            openGuruModal((editBtn as HTMLElement).dataset.id);
+            openGuruModal(editBtn.dataset.id);
         } else if (deleteBtn) {
-            const guruId = (deleteBtn as HTMLElement).dataset.id;
+            const guruId = deleteBtn.dataset.id;
             const guru = state.guru.find(g => g.id === guruId);
             showCustomConfirm('Konfirmasi Hapus', `Anda yakin ingin menghapus data guru: <strong>${guru?.nama || 'ini'}</strong>?`, 'Ya, Hapus')
                 .then(confirmed => {
@@ -2137,7 +2133,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } else if (row && row.dataset.id && !target.closest('button')) {
              // Handle row click to toggle checkbox, but not if a button was clicked
             const id = row.dataset.id;
-            const rowCheckbox = row.querySelector('.guru-checkbox') as HTMLInputElement;
+            const rowCheckbox = row.querySelector('.guru-checkbox');
             if (rowCheckbox) {
                 rowCheckbox.checked = !rowCheckbox.checked;
                 // Manually trigger the change event
@@ -2154,14 +2150,14 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.getElementById('search-guru-input').addEventListener('input', (e) => {
-        state.ui.guru.searchQuery = (e.target as HTMLInputElement).value;
+        state.ui.guru.searchQuery = e.target.value;
         state.ui.guru.currentPage = 1; // Reset to first page on search
         renderGuruList();
-        document.getElementById('clear-search-guru-btn').classList.toggle('hidden', !(e.target as HTMLInputElement).value);
+        document.getElementById('clear-search-guru-btn').classList.toggle('hidden', !e.target.value);
     });
     
     document.getElementById('clear-search-guru-btn').addEventListener('click', () => {
-        (document.getElementById('search-guru-input') as HTMLInputElement).value = '';
+        document.getElementById('search-guru-input').value = '';
         state.ui.guru.searchQuery = '';
         renderGuruList();
         document.getElementById('clear-search-guru-btn').classList.add('hidden');
@@ -2224,7 +2220,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.getElementById('btn-confirm-import-guru').addEventListener('click', () => {
-        const fileInput = document.getElementById('import-guru-file-input') as HTMLInputElement;
+        const fileInput = document.getElementById('import-guru-file-input');
         const file = fileInput.files[0];
         if (!file) {
             showCustomAlert('warning', 'File Belum Dipilih', 'Silakan pilih file Excel untuk diimpor.');
@@ -2234,13 +2230,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const reader = new FileReader();
         reader.onload = (event) => {
             try {
-                const data = new Uint8Array(event.target.result as ArrayBuffer);
+                const data = new Uint8Array(event.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                 const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
                 
                 // Assuming header is in the first row
-                const headers = (jsonData[0] as string[]).map(h => h.trim());
+                const headers = jsonData[0].map(h => h.trim());
                 const requiredHeaders = ['ID_Unik', 'NIP', 'Nama', 'Jabatan', 'Jenis_Guru'];
                 
                 // Very basic header check
@@ -2254,7 +2250,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 let updatedCount = 0;
                 
                 for (let i = 1; i < jsonData.length; i++) {
-                    const row = jsonData[i] as any[];
+                    const row = jsonData[i];
                     if (!row || !row[0] || !row[2]) continue; // Skip empty rows
 
                     const guruData = {
@@ -2315,8 +2311,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Set Manual Absensi
     document.getElementById('btn-tampilkan-manual-absensi').addEventListener('click', () => {
-        const guruId = (document.getElementById('manual-absensi-guru') as HTMLSelectElement).value;
-        const monthYear = (document.getElementById('manual-absensi-bulan') as HTMLInputElement).value;
+        const guruId = document.getElementById('manual-absensi-guru').value;
+        const monthYear = document.getElementById('manual-absensi-bulan').value;
         if (!guruId) {
             showCustomAlert('warning', 'Pilih Guru', 'Silakan pilih guru terlebih dahulu.');
             return;
@@ -2329,24 +2325,24 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.getElementById('manual-absensi-form-container').addEventListener('click', (e) => {
-        const target = e.target as HTMLElement;
+        const target = e.target;
         const saveBtn = target.closest('#btn-simpan-manual-absensi');
         const resetAllBtn = target.closest('#btn-reset-manual-absensi');
         const resetHarianBtn = target.closest('.btn-reset-harian');
         const liveAbsensiBtn = target.closest('#btn-live-absensi');
 
         if (saveBtn) {
-            const guruId = (document.getElementById('manual-absensi-guru') as HTMLSelectElement).value;
+            const guruId = document.getElementById('manual-absensi-guru').value;
             const rows = document.querySelectorAll('#manual-absensi-form-container tbody tr');
             let changes = 0;
             rows.forEach(row => {
-                const tr = row as HTMLElement;
+                const tr = row;
                 const date = tr.dataset.date;
                 if (date) {
                     const key = `${guruId}-${date}`;
-                    const masuk = (tr.querySelector('.manual-jam:nth-of-type(1)') as HTMLInputElement).value.trim();
-                    const pulang = (tr.querySelector('.manual-jam:nth-of-type(2)') as HTMLInputElement).value.trim();
-                    const keterangan = (tr.querySelector('.manual-keterangan') as HTMLTextAreaElement).value.trim();
+                    const masuk = tr.querySelector('.manual-jam:nth-of-type(1)').value.trim();
+                    const pulang = tr.querySelector('.manual-jam:nth-of-type(2)').value.trim();
+                    const keterangan = tr.querySelector('.manual-keterangan').value.trim();
 
                     if (masuk || pulang || keterangan) {
                         state.kehadiranOverrides[key] = { masuk, pulang, keterangan };
@@ -2364,8 +2360,8 @@ document.addEventListener('DOMContentLoaded', function () {
             showCustomConfirm('Konfirmasi Reset', 'Anda yakin ingin menghapus semua isian kehadiran manual untuk guru dan periode ini?', 'Ya, Reset')
                 .then(confirmed => {
                     if (confirmed) {
-                        const guruId = (document.getElementById('manual-absensi-guru') as HTMLSelectElement).value;
-                        const monthYear = (document.getElementById('manual-absensi-bulan') as HTMLInputElement).value;
+                        const guruId = document.getElementById('manual-absensi-guru').value;
+                        const monthYear = document.getElementById('manual-absensi-bulan').value;
                         const prefix = `${guruId}-${monthYear}`;
                         Object.keys(state.kehadiranOverrides).forEach(key => {
                             if (key.startsWith(prefix)) {
@@ -2381,16 +2377,16 @@ document.addEventListener('DOMContentLoaded', function () {
         
         if (resetHarianBtn) {
             const row = resetHarianBtn.closest('tr');
-            (row.querySelector('td:nth-child(3) .manual-jam') as HTMLInputElement).value = '';
-            (row.querySelector('td:nth-child(4) .manual-jam') as HTMLInputElement).value = '';
-            (row.querySelector('td:nth-child(5) .manual-keterangan') as HTMLTextAreaElement).value = '';
+            row.querySelector('td:nth-child(3) .manual-jam').value = '';
+            row.querySelector('td:nth-child(4) .manual-jam').value = '';
+            row.querySelector('td:nth-child(5) .manual-keterangan').value = '';
             row.classList.remove('holiday-row'); // remove class if any
-            row.querySelectorAll('input, textarea, button').forEach((el: HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement) => el.disabled = false);
+            row.querySelectorAll('input, textarea, button').forEach(el => el.disabled = false);
         }
 
         if (liveAbsensiBtn) {
-            const action = (liveAbsensiBtn as HTMLElement).dataset.action; // 'masuk' or 'pulang'
-            const guruId = (document.getElementById('manual-absensi-guru') as HTMLSelectElement).value;
+            const action = liveAbsensiBtn.dataset.action; // 'masuk' or 'pulang'
+            const guruId = document.getElementById('manual-absensi-guru').value;
             const now = new Date();
             const todayStr = now.toISOString().slice(0, 10);
             const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -2408,7 +2404,7 @@ document.addEventListener('DOMContentLoaded', function () {
             saveState();
 
             // Refresh the live section to show the update
-             const monthYear = (document.getElementById('manual-absensi-bulan') as HTMLInputElement).value;
+             const monthYear = document.getElementById('manual-absensi-bulan').value;
              generateManualAbsensiForm(guruId, monthYear);
              showCustomAlert('success', 'Berhasil', `Absen ${action} pada pukul ${timeStr} berhasil direkam.`);
         }
@@ -2416,15 +2412,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Event delegation for text area auto-disabling inputs
     document.getElementById('manual-absensi-form-container').addEventListener('input', (e) => {
-        const target = e.target as HTMLElement;
+        const target = e.target;
         if (target.classList.contains('manual-keterangan')) {
             const row = target.closest('tr');
-            const hasText = (target as HTMLTextAreaElement).value.trim() !== '';
-            const jamInputs = row.querySelectorAll('.manual-jam, .time-picker-trigger') as NodeListOf<HTMLInputElement | HTMLButtonElement>;
+            const hasText = target.value.trim() !== '';
+            const jamInputs = row.querySelectorAll('.manual-jam, .time-picker-trigger');
             jamInputs.forEach(input => {
                 input.disabled = hasText;
                 if(hasText) {
-                    (input as HTMLInputElement).value = ''; // Clear time if keterangan is filled
+                    input.value = ''; // Clear time if keterangan is filled
                 }
             });
             if (hasText) {
@@ -2476,7 +2472,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.getElementById('btn-confirm-import-absensi').addEventListener('click', () => {
-        const fileInput = document.getElementById('import-absensi-file-input') as HTMLInputElement;
+        const fileInput = document.getElementById('import-absensi-file-input');
         const file = fileInput.files[0];
         if (!file) {
             showCustomAlert('warning', 'File Belum Dipilih', 'Silakan pilih file Excel untuk diimpor.');
@@ -2486,7 +2482,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
-                const data = new Uint8Array(e.target.result as ArrayBuffer);
+                const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array', cellDates: true });
                 let recordsImported = 0;
 
@@ -2496,7 +2492,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         const guruId = match[1];
                         if (state.guru.some(g => g.id === guruId)) {
                             const ws = workbook.Sheets[sheetName];
-                            const jsonData = XLSX.utils.sheet_to_json(ws) as any[];
+                            const jsonData = XLSX.utils.sheet_to_json(ws);
 
                             jsonData.forEach(row => {
                                 const tanggal = row['Tanggal'];
@@ -2530,9 +2526,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 saveState();
                 // Optionally refresh the current view if a guru is selected
-                const currentGuruId = (document.getElementById('manual-absensi-guru') as HTMLSelectElement).value;
+                const currentGuruId = document.getElementById('manual-absensi-guru').value;
                 if(currentGuruId) {
-                    const currentMonth = (document.getElementById('manual-absensi-bulan') as HTMLInputElement).value;
+                    const currentMonth = document.getElementById('manual-absensi-bulan').value;
                     generateManualAbsensiForm(currentGuruId, currentMonth);
                 }
                 document.getElementById('import-absensi-modal').classList.add('hidden');
@@ -2624,11 +2620,11 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.getElementById('btn-restore-data').addEventListener('click', () => {
-        (document.getElementById('restore-file-input') as HTMLInputElement).click();
+        document.getElementById('restore-file-input').click();
     });
     
     document.getElementById('restore-file-input').addEventListener('change', (e) => {
-        const file = (e.target as HTMLInputElement).files[0];
+        const file = e.target.files[0];
         if (!file) return;
 
         showCustomConfirm('Konfirmasi Restore', 'Anda yakin ingin merestore data dari file ini? <strong>Semua data saat ini akan ditimpa.</strong>', 'Ya, Restore')
@@ -2637,7 +2633,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const reader = new FileReader();
                     reader.onload = (event) => {
                         try {
-                            const restoredData = JSON.parse(event.target.result as string);
+                            const restoredData = JSON.parse(event.target.result);
                             // Basic validation
                             if (restoredData.sekolah && restoredData.guru) {
                                 state.sekolah = restoredData.sekolah;
@@ -2658,12 +2654,12 @@ document.addEventListener('DOMContentLoaded', function () {
                             showCustomAlert('error', 'Restore Gagal', 'File backup tidak valid atau rusak.');
                         } finally {
                             // Reset file input
-                             (e.target as HTMLInputElement).value = '';
+                             e.target.value = '';
                         }
                     };
                     reader.readAsText(file);
                 } else {
-                    (e.target as HTMLInputElement).value = ''; // Reset if cancelled
+                    e.target.value = ''; // Reset if cancelled
                 }
             });
     });
@@ -2683,7 +2679,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Time Picker Logic
-    let activeTimeInput: HTMLInputElement | null = null;
+    let activeTimeInput = null;
     const timePickerModal = document.getElementById('time-picker-modal-backdrop');
     const clock = document.getElementById('time-picker-clock');
     const hourHand = document.getElementById('hour-hand');
@@ -2694,7 +2690,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentHour = 12;
     let currentMinute = 0;
 
-    function openTimePicker(targetInput: HTMLInputElement) {
+    function openTimePicker(targetInput) {
         activeTimeInput = targetInput;
         const timeValue = activeTimeInput.value;
         if (timeValue && timeValue.includes(':')) {
@@ -2789,7 +2785,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     
     clock.addEventListener('click', (e) => {
-        const target = e.target as HTMLElement;
+        const target = e.target;
         const value = target.dataset.value;
 
         if (value) {
@@ -2814,10 +2810,10 @@ document.addEventListener('DOMContentLoaded', function () {
     
     // Event delegation for time picker triggers (input field or icon)
     document.body.addEventListener('click', e => {
-        const target = e.target as HTMLElement;
+        const target = e.target;
         const container = target.closest('.time-input-container');
         if (container) {
-            const input = container.querySelector('.time-input-display') as HTMLInputElement;
+            const input = container.querySelector('.time-input-display');
             if (input && !input.disabled) {
                 openTimePicker(input);
             }
