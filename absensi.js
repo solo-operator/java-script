@@ -293,7 +293,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function minutesToHHMM(totalMinutes) {
-        if (totalMinutes === '-' || totalMinutes <= 0 || !totalMinutes) {
+        if (totalMinutes === '-' || totalMinutes < 0 || !totalMinutes) {
             return '-';
         }
         const hours = Math.floor(totalMinutes / 60);
@@ -301,12 +301,11 @@ document.addEventListener('DOMContentLoaded', function () {
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     }
 
-    // FIX: Define the missing processAbsensi function.
     function processAbsensi(absensiData, guruIds, startDate, endDate) {
         const { pengaturanKerja, guru: allGuru, kehadiranOverrides } = state;
-
+    
         const result = {};
-
+    
         const timeToMinutes = (timeStr) => {
             if (!timeStr || timeStr === '-') return null;
             try {
@@ -317,19 +316,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 return null;
             }
         };
-
+    
         guruIds.forEach(id => {
             const guru = allGuru.find(g => g.id === id);
             if (!guru) return;
-
+    
             const isHonorer = guru.jenisGuru === 'Honorer';
             const jamMasukKerja = isHonorer ? pengaturanKerja.jamMasukHonorer : pengaturanKerja.jamMasukReguler;
             const jamPulangKerja = isHonorer ? pengaturanKerja.jamPulangHonorer : pengaturanKerja.jamPulangReguler;
-
+    
             const jamMasukKerjaMin = timeToMinutes(jamMasukKerja);
             const jamPulangKerjaMin = timeToMinutes(jamPulangKerja);
             const toleransiMin = pengaturanKerja.toleransi;
-
+    
             const guruData = {
                 days: {},
                 summary: {
@@ -341,14 +340,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     totalPlgCptMenit: 0,
                 }
             };
-
+    
             const absensiGuru = absensiData.filter(a => a.id === id);
-
+    
             for (let d = new Date(startDate.getTime()); d <= endDate; d.setUTCDate(d.getUTCDate() + 1)) {
                 const dateStr = d.toISOString().slice(0, 10);
                 const dayName = HARI[d.getUTCDay()];
                 const isHariKerja = pengaturanKerja.hariKerja.includes(dayName);
-
+    
                 const dayData = {
                     jamKerjaMasuk: '-',
                     jamKerjaPulang: '-',
@@ -363,18 +362,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 
                 const overrideKey = `${id}-${dateStr}`;
                 const override = kehadiranOverrides[overrideKey];
-
+    
                 if (isHariKerja) {
                     dayData.jamKerjaMasuk = jamMasukKerja;
                     dayData.jamKerjaPulang = jamPulangKerja;
                     dayData.keterangan = 'Absen';
-
+    
                     if (override && override.keterangan) {
                         dayData.keterangan = override.keterangan;
                     } else {
                         let scanMasuk = null;
                         let scanKeluar = null;
-
+    
                         if (override) {
                             if (override.masuk) scanMasuk = override.masuk;
                             if (override.pulang) scanKeluar = override.pulang;
@@ -391,14 +390,14 @@ document.addEventListener('DOMContentLoaded', function () {
                         
                         if (scanMasuk) dayData.scanMasuk = scanMasuk;
                         if (scanKeluar) dayData.scanKeluar = scanKeluar;
-
+    
                         const scanMasukMin = timeToMinutes(scanMasuk);
                         const scanKeluarMin = timeToMinutes(scanKeluar);
                         
                         if (scanMasukMin !== null && jamMasukKerjaMin !== null) {
                             dayData.keterangan = 'Hadir';
-                            dayData.jmlHadir = '1';
-
+                            guruData.summary.hadir++;
+    
                             const keterlambatan = scanMasukMin - jamMasukKerjaMin;
                             if (keterlambatan > toleransiMin) {
                                 dayData.terlambat = minutesToHHMM(keterlambatan);
@@ -406,26 +405,32 @@ document.addEventListener('DOMContentLoaded', function () {
                                 guruData.summary.terlambat++;
                                 guruData.summary.totalTerlambatMenit += keterlambatan;
                             } else {
-                                dayData.terlambat = '00:00';
+                                dayData.terlambat = '-';
                             }
-                            guruData.summary.hadir++;
                         }
-
+    
                         if (scanKeluarMin !== null && jamPulangKerjaMin !== null) {
                             const pulangCepat = jamPulangKerjaMin - scanKeluarMin;
                             if (pulangCepat > 0) {
                                 dayData.plgCpt = minutesToHHMM(pulangCepat);
                                 guruData.summary.totalPlgCptMenit += pulangCepat;
                             } else {
-                                dayData.plgCpt = '00:00';
+                                dayData.plgCpt = '-';
                             }
-
+    
                             const lembur = scanKeluarMin - jamPulangKerjaMin;
                             if (lembur > 0) {
                                 dayData.lembur = minutesToHHMM(lembur);
                                 guruData.summary.totalLemburMenit += lembur;
                             } else {
-                                dayData.lembur = '00:00';
+                                dayData.lembur = '-';
+                            }
+                        }
+    
+                        if (scanMasukMin !== null && scanKeluarMin !== null) {
+                            const totalHadirMenit = scanKeluarMin - scanMasukMin;
+                            if (totalHadirMenit >= 0) {
+                                dayData.jmlHadir = minutesToHHMM(totalHadirMenit);
                             }
                         }
                     }
@@ -448,7 +453,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             result[id] = guruData;
         });
-
+    
         return result;
     }
 
@@ -812,29 +817,29 @@ document.addEventListener('DOMContentLoaded', function () {
             let statusHtml = '';
 
             if (overrideToday?.masuk) {
-                 statusHtml += `<p style="margin:0; font-size: 0.85rem; color: var(--success-color);">✔️ Absen Masuk: <strong>${overrideToday.masuk}</strong></p>`;
+                 statusHtml += `<p style="margin:0; font-size: 0.85rem; color: var(--success-color);">✔️ Absen Masuk Pukul: <strong>${overrideToday.masuk}</strong></p>`;
             }
              if (overrideToday?.pulang) {
-                 statusHtml += `<p style="margin:0; font-size: 0.85rem; color: var(--success-color);">✔️ Absen Pulang: <strong>${overrideToday.pulang}</strong></p>`;
+                 statusHtml += `<p style="margin:0; font-size: 0.85rem; color: var(--success-color);">✔️ Absen Pulang Pukul: <strong>${overrideToday.pulang}</strong></p>`;
             }
 
             if (isMasukTime) { // Mode Absen Masuk (00:00 - 12:00)
                 if (overrideToday?.masuk) {
-                    buttonHtml = `<button class="btn btn-secondary" disabled>Sudah Absen Masuk</button>`;
+                    buttonHtml = `<button class="btn btn-secondary" disabled><i class="bi bi-alarm"></i>Sudah Absen Masuk</button>`;
                 } else {
-                    buttonHtml = `<button id="btn-live-absensi" data-action="masuk" class="btn btn-primary">Absen Masuk Sekarang</button>`;
+                    buttonHtml = `<button id="btn-live-absensi" data-action="masuk" class="btn btn-primary"><i class="bi bi-alarm"></i>Absen Masuk Sekarang</button>`;
                 }
             } else { // Mode Absen Pulang (12:01 - 23:59)
                 if (overrideToday?.pulang) {
-                    buttonHtml = `<button class="btn btn-secondary" disabled>Sudah Absen Pulang</button>`;
+                    buttonHtml = `<button class="btn btn-secondary" disabled><i class="bi bi-alarm"></i>Sudah Absen Pulang</button>`;
                 } else {
-                    buttonHtml = `<button id="btn-live-absensi" data-action="pulang" class="btn btn-success">Absen Pulang Sekarang</button>`;
+                    buttonHtml = `<button id="btn-live-absensi" data-action="pulang" class="btn btn-success"><i class="bi bi-alarm"></i>Absen Pulang Sekarang</button>`;
                 }
             }
             
             liveAbsensiHtml = `
-                <div style="border: 1px solid var(--border-color); border-left: 4px solid var(--info-color); padding: 1rem; border-radius: 4px; background: #f8f9fa;">
-                    <h4 style="margin-top: 0; margin-bottom: 0.75rem; font-size: 1rem;">Absensi Hari Ini (${now.toLocaleDateString('id-ID', {day: '2-digit', month: 'long'})})</h4>
+                <div class="absen-otomatis" id="live-absensi-container" style="border: 1px solid var(--border-color); border-left: 4px solid var(--info-color); padding: 1rem; border-radius: 8px; background: #fff;min-width: 450px;text-align:center;box-shadow: var(--card-shadow);">
+                    <h4 style="margin-top: 0; margin-bottom: 0.4rem; font-size: 1rem;">Klik Absensi Hari Ini (${now.toLocaleDateString('id-ID', {day: '2-digit', month: 'long'})})</h4>
                     ${buttonHtml}
                     <div style="margin-top: 0.75rem;">${statusHtml}</div>
                 </div>
@@ -842,12 +847,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const guruInfoHtml = `
-            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem;">
-                <div class="settings-section" style="padding: 1rem 1.5rem; border-left: 4px solid var(--primary-color); flex: 1; min-width: 300px;">
-                    <div style="font-size: 0.95rem; line-height: 1.5;">
-                        <div style="display: flex;"><strong style="width: 100px; flex-shrink: 0;">No. ID</strong>: ${guru.id}</div>
-                        <div style="display: flex;"><strong style="width: 100px; flex-shrink: 0;">Nama Guru</strong>: ${guru.nama}</div>
-                        <div style="display: flex;"><strong style="width: 100px; flex-shrink: 0;">Jenis Guru</strong>: ${guru.jenisGuru}</div>
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0rem;">
+                <div class="settings-section" style="padding: 1rem 1.3rem; border-left: 4px solid var(--primary-color); flex: 1; min-width: 450px;">
+                    <div style="font-size: 0.95rem; line-height: 2;">
+                        <div style="display: flex;"><strong style="width: 100px; flex-shrink: 0;">No. ID</strong><strong>: ${guru.id}</strong></div>
+                        <div style="display: flex;"><strong style="width: 100px; flex-shrink: 0;">Nama Guru</strong><strong>: ${guru.nama}</strong></div>
+                        <div style="display: flex;"><strong style="width: 100px; flex-shrink: 0;">Jenis Guru</strong><strong>: ${guru.jenisGuru}</strong></div>
                     </div>
                 </div>
                 ${liveAbsensiHtml}
@@ -911,7 +916,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         
         container.innerHTML = guruInfoHtml + `
-            <div class="data-table-container" style="margin-top:0;">
+            <div class="data-table-container" style="margin-top:-0.5rem;">
                 <table class="data-table responsive-table-manual">
                     <thead>
                         <tr>
@@ -1027,10 +1032,10 @@ document.addEventListener('DOMContentLoaded', function () {
         keteranganCells.forEach(cell => {
             const htmlCell = cell;
             const text = htmlCell.dataset.keterangan || '';
-            if (text.length > 20) {
-                htmlCell.style.fontSize = '7pt';
+            if (text.length > 25) {
+                htmlCell.style.fontSize = '7.5pt';
             } else if (text.length > 15) {
-                htmlCell.style.fontSize = '8pt';
+                htmlCell.style.fontSize = '10pt';
             } else {
                 htmlCell.style.fontSize = ''; // Use CSS default
             }
@@ -1460,19 +1465,19 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
             <div class="laporan-title">
                 <h4>LAPORAN PRESENSI KEHADIRAN</h4>
-                <p style="text-transform:uppercase;">Periode: ${monthYear}</p>
+                <p style="text-transform:uppercase;font-weight:bold;">Periode: ${monthYear}</p>
             </div>
             <div class="laporan-identitas">
                 <table>
 					<tr>
-					<td>No. ID</td>
-					<td width="5">:</td>
-					<td>${guru.id}</td>
+					<td><strong>No. ID</strong></td>
+					<td width="5"><strong>:</strong></td>
+					<td><strong>${guru.id}</strong></td>
 					<td width="250" style="text-align:center;">Periode Waktu</td>
 					</tr>
                     <tr>
-					<td class="laporan-identitas-nama" width="52">Nama</td>
-					<td>:</td>
+					<td class="laporan-identitas-nama" width="60"><strong>Nama</strong></td>
+					<td><strong>:</strong></td>
 					<td><strong>${guru.nama}</strong></td>
 					<td style="text-align:center;">Dari ${formattedStartDate} s/d ${formattedEndDate}</td>
 					</tr>
@@ -1480,15 +1485,15 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
             <table class="laporan-table">
                 <colgroup>
-                    <col style="width: 37px;">
-                    <col style="width: 33px;">
+                    <col style="width: 40px;">
+                    <col style="width: 35px;">
                     <col style="width: 40px;">
                     <col style="width: 40px;">
                     <col style="width: 42px;">
                     <col style="width: 42px;">
                     <col style="width: 35px;">
-                    <col style="width: 33px;">
-                    <col style="width: 33px;">
+                    <col style="width: 30px;">
+                    <col style="width: 30px;">
                     <col style="width: 35px;">
                     <col style="width: 90px;">
                 </colgroup>
@@ -1498,13 +1503,13 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="laporan-summary">
                 <table style="line-height:1;">
                      <tr>
-					 <td>Total Kehadiran</td><td>:</td><td><strong>${data.summary.hadir} hari</strong></td>
+					 <td>Total Kehadiran</td><td>:</td><td><strong>${data.summary.hadir} Hari</strong></td>
 					 </tr>
 					 <tr>
-					 <td>Total Terlambat</td><td>:</td><td><strong>${data.summary.terlambat} kali</strong></td>
+					 <td>Total Terlambat</td><td>:</td><td><strong>${data.summary.terlambat} Kali</strong></td>
 					 </tr>
 					 <tr>
-					 <td>Total Absen</td><td>:</td><td><strong>${data.summary.absen} hari</strong></td>
+					 <td>Total Absen</td><td>:</td><td><strong>${data.summary.absen} Hari</strong></td>
 					 </tr>
                 </table>
             </div>
@@ -1513,13 +1518,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     <p>Mengetahui,</p>
                     <p>Kepala Sekolah</p>
                     <p class="nama">${s.kepsek}</p>
-                    <p>NIP. ${s.nip}</p>
+                    <p style="font-weight:bold;">NIP. ${s.nip}</p>
                 </div>
                 <div class="ttd-box">
                     <p>${s.desa}, ${endDate.toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC'})}</p>
                     <p>Nama ${guru.jabatan}</p>
                     <p class="nama">${guru.nama}</p>
-                    <p>NIP. ${guru.nip || '-'}</p>
+                    <p style="font-weight:bold;">NIP. ${guru.nip || '-'}</p>
                 </div>
             </div>
 			<div class="laporan-ttd">
@@ -1528,11 +1533,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     <p>Pengawas Sekolah</p>
 					<p>Kec. ${s.kecamatan}</p>
                     <p class="nama">${s.pengawas}</p>
-                    <p>NIP. ${s.nipPengawas}</p>
+                    <p style="font-weight:bold;">NIP. ${s.nipPengawas}</p>
                 </div>
             </div>
             <div class="laporan-footer">
-                <p>Oleh : Supervisor <br><text style="margin-left:26px;">${formattedFooterEndDate}</text></p>
+                <p>Oleh : Supervisor <br><text style="margin-left:32px;">${formattedFooterEndDate}</text></p>
                 <p>Hal. ${pageNumber}</p>
             </div>
         </div>
@@ -1638,19 +1643,19 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
             <div class="laporan-title">
                 <h4>LAPORAN PRESENSI KEHADIRAN</h4>
-                <p style="text-transform:uppercase;">Periode: ${monthYear}</p>
+                <p style="text-transform:uppercase;font-weight:bold;">Periode: ${monthYear}</p>
             </div>
             <div class="laporan-identitas">
                 <table>
 					<tr>
-					<td>No. ID</td>
-					<td width="5">:</td>
-					<td>${guru.id}</td>
+					<td><strong>No. ID</strong></td>
+					<td width="5"><strong>:</strong></td>
+					<td><strong>${guru.id}</strong></td>
 					<td width="250" style="text-align:center;">Periode Waktu</td>
 					</tr>
                     <tr>
-					<td class="laporan-identitas-nama" width="52">Nama</td>
-					<td>:</td>
+					<td class="laporan-identitas-nama" width="60"><strong>Nama</strong></td>
+					<td><strong>:</strong></td>
 					<td><strong>${guru.nama}</strong></td>
 					<td style="text-align:center;">Dari ${formattedStartDate} s/d ${formattedEndDate}</td>
 					</tr>
@@ -1658,15 +1663,15 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
             <table class="laporan-table">
                 <colgroup>
-                    <col style="width: 35px;">
+                    <col style="width: 40px;">
                     <col style="width: 35px;">
                     <col style="width: 40px;">
                     <col style="width: 40px;">
-                    <col style="width: 40px;">
-                    <col style="width: 40px;">
+                    <col style="width: 42px;">
+                    <col style="width: 42px;">
                     <col style="width: 35px;">
-                    <col style="width: 35px;">
-                    <col style="width: 35px;">
+                    <col style="width: 30px;">
+                    <col style="width: 30px;">
                     <col style="width: 35px;">
                     <col style="width: 90px;">
                 </colgroup>
@@ -1676,28 +1681,28 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="laporan-summary">
                 <table style="line-height:1;">
                      <tr>
-					 <td>Total Kehadiran</td><td>:</td><td><strong>${data.summary.hadir} hari</strong></td>
+					 <td>Total Kehadiran</td><td>:</td><td><strong>${data.summary.hadir} Hari</strong></td>
 					 </tr>
 					 <tr>
-					 <td>Total Terlambat</td><td>:</td><td><strong>${data.summary.terlambat} kali</strong></td>
+					 <td>Total Terlambat</td><td>:</td><td><strong>${data.summary.terlambat} Kali</strong></td>
 					 </tr>
 					 <tr>
-					 <td>Total Absen</td><td>:</td><td><strong>${data.summary.absen} hari</strong></td>
+					 <td>Total Absen</td><td>:</td><td><strong>${data.summary.absen} Hari</strong></td>
 					 </tr>
                 </table>
             </div>
             <div class="laporan-ttd">
-                <div class="ttd-box" style="text-align:left;width:95%;margin-left:117px;border:0px solid black;">
+                <div class="ttd-box" style="text-align:left;width:95%;margin-left:127px;border:0px solid black;">
                     <p>Mengetahui,</p>
                     <p>Kepala Madrasah</p>
                     <p class="nama">${s.kepsek}</p>
-                    <p>NIP. ${s.nip}</p>
+                    <p style="font-weight:bold;">NIP. ${s.nip}</p>
                 </div>
                 <div class="ttd-box" style="text-align:left;border:0px solid black;">
                     <p>${s.desa}, ${endDate.toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC'})}</p>
                     <p>Nama ${guru.jabatan}</p>
                     <p class="nama">${guru.nama}</p>
-                    <p>NIP. ${guru.nip || '-'}</p>
+                    <p style="font-weight:bold;">NIP. ${guru.nip || '-'}</p>
                 </div>
             </div>
 			<div class="laporan-ttd">
@@ -1706,11 +1711,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     <p>Pengawas Madrasah</p>
 					<p>Kec. ${s.kecamatan}</p>
                     <p class="nama">${s.pengawas}</p>
-                    <p>NIP. ${s.nipPengawas}</p>
+                    <p style="font-weight:bold;">NIP. ${s.nipPengawas}</p>
                 </div>
             </div>
             <div class="laporan-footer">
-                <p>Oleh : Supervisor <br><text style="margin-left:26px;">${formattedFooterEndDate}</text></p>
+                <p>Oleh : Supervisor <br><text style="margin-left:32px;">${formattedFooterEndDate}</text></p>
                 <p>Hal. ${pageNumber}</p>
             </div>
         </div>
@@ -1785,20 +1790,21 @@ document.addEventListener('DOMContentLoaded', function () {
         return `
         <div class="laporan-container" id="laporan-print-area-v3">
             <div class="laporan-title" style="margin-top:0;">
-                <h4>LAPORAN PRESENSI KEHADIRAN</h4>
-                <p style="text-transform:uppercase;">Periode: ${monthYear}</p>
+                <h4 style="text-decoration:none;">LAPORAN PRESENSI KEHADIRAN</h4>
+				<p style="font-weight:bold;">${s.nama.toUpperCase()}</p>
+                <p style="text-transform:uppercase;font-weight:bold;">Periode: ${monthYear}</p>
             </div>
             <div class="laporan-identitas">
                 <table>
 					<tr>
-					<td>No. ID</td>
-					<td width="5">:</td>
-					<td>${guru.id}</td>
+					<td><strong>No. ID</strong></td>
+					<td width="5"><strong>:</strong></td>
+					<td><strong>${guru.id}</strong></td>
 					<td width="250" style="text-align:center;">Periode Waktu</td>
 					</tr>
                     <tr>
-					<td class="laporan-identitas-nama-v3" width="60">Nama</td>
-					<td>:</td>
+					<td class="laporan-identitas-nama-v3" width="60"><strong>Nama</strong></td>
+					<td><strong>:</strong></td>
 					<td><strong>${guru.nama}</strong></td>
 					<td style="text-align:center;">Dari ${formattedStartDate} s/d ${formattedEndDate}</td>
 					</tr>
@@ -1806,15 +1812,15 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
             <table class="laporan-table">
                  <colgroup>
-                    <col style="width: 35px;">
+                    <col style="width: 40px;">
                     <col style="width: 35px;">
                     <col style="width: 40px;">
                     <col style="width: 40px;">
-                    <col style="width: 40px;">
-                    <col style="width: 40px;">
+                    <col style="width: 42px;">
+                    <col style="width: 42px;">
                     <col style="width: 35px;">
-                    <col style="width: 35px;">
-                    <col style="width: 35px;">
+                    <col style="width: 30px;">
+                    <col style="width: 30px;">
                     <col style="width: 35px;">
                     <col style="width: 90px;">
                 </colgroup>
@@ -1824,13 +1830,13 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="laporan-summary">
                  <table style="line-height:1;">
                      <tr>
-					 <td>Total Kehadiran</td><td>:</td><td><strong>${data.summary.hadir} hari</strong></td>
+					 <td>Total Kehadiran</td><td>:</td><td><strong>${data.summary.hadir} Hari</strong></td>
 					 </tr>
 					 <tr>
-					 <td>Total Terlambat</td><td>:</td><td><strong>${data.summary.terlambat} kali</strong></td>
+					 <td>Total Terlambat</td><td>:</td><td><strong>${data.summary.terlambat} Kali</strong></td>
 					 </tr>
 					 <tr>
-					 <td>Total Absen</td><td>:</td><td><strong>${data.summary.absen} hari</strong></td>
+					 <td>Total Absen</td><td>:</td><td><strong>${data.summary.absen} Hari</strong></td>
 					 </tr>
                 </table>
             </div>
@@ -1839,13 +1845,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     <p>Mengetahui,</p>
                     <p>Kepala Sekolah</p>
                     <p class="nama">${s.kepsek}</p>
-                    <p>NIP. ${s.nip}</p>
+                    <p style="font-weight:bold;">NIP. ${s.nip}</p>
                 </div>
                 <div class="ttd-box">
                     <p>${s.desa}, ${endDate.toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC'})}</p>
                     <p>Nama ${guru.jabatan}</p>
                     <p class="nama">${guru.nama}</p>
-                    <p>NIP. ${guru.nip || '-'}</p>
+                    <p style="font-weight:bold;">NIP. ${guru.nip || '-'}</p>
                 </div>
             </div>
 			<div class="laporan-ttd">
@@ -1854,11 +1860,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     <p>Pengawas Sekolah</p>
 					<p>Kec. ${s.kecamatan}</p>
                     <p class="nama">${s.pengawas}</p>
-                    <p>NIP. ${s.nipPengawas}</p>
+                    <p style="font-weight:bold;">NIP. ${s.nipPengawas}</p>
                 </div>
             </div>
             <div class="laporan-footer">
-                <p>Oleh : Supervisor <br><text style="margin-left:26px;">${formattedFooterEndDate}</text></p>
+                <p>Oleh : Supervisor <br><text style="margin-left:32px;">${formattedFooterEndDate}</text></p>
                 <p>Hal. ${pageNumber}</p>
             </div>
         </div>
@@ -1920,26 +1926,39 @@ document.addEventListener('DOMContentLoaded', function () {
         return `
         <div class="laporan-container" id="laporan-print-area-v4">
              <div class="laporan-title" style="margin-top:0;">
-                <h4>LAPORAN PRESENSI KEHADIRAN</h4>
-                <p style="text-transform:uppercase;">Periode: ${monthYear}</p>
+                <h4 style="text-decoration:none;">LAPORAN PRESENSI KEHADIRAN</h4>
+				<p style="font-weight:bold;">${s.nama.toUpperCase()}</p>
+                <p style="text-transform:uppercase;font-weight:bold;">Periode: ${monthYear}</p>
             </div>
             <div class="laporan-identitas">
                 <table>
 					<tr>
-                        <td>No. ID</td><td width="5">:</td><td>${guru.id}</td>
+                        <td><strong>No. ID</strong></td>
+						<td width="5"><strong>:</strong></td>
+						<td><strong>${guru.id}</strong></td>
                         <td width="250" style="text-align:center;">Periode Waktu</td>
 					</tr>
                     <tr>
-                        <td class="laporan-identitas-nama-v3" width="60">Nama</td><td>:</td><td><strong>${guru.nama}</strong></td>
+                        <td class="laporan-identitas-nama-v3" width="60"><strong>Nama</strong></td>
+						<td><strong>:</strong></td>
+						<td><strong>${guru.nama}</strong></td>
                         <td style="text-align:center;">Dari ${formattedStartDate} s/d ${formattedEndDate}</td>
 					</tr>
                 </table>
             </div>
             <table class="laporan-table">
                 <colgroup>
-                    <col style="width: 35px;"><col style="width: 35px;"><col style="width: 40px;"><col style="width: 40px;">
-                    <col style="width: 40px;"><col style="width: 40px;"><col style="width: 35px;"><col style="width: 35px;">
-                    <col style="width: 35px;"><col style="width: 35px;"><col style="width: 90px;">
+                    <col style="width: 40px;">
+                    <col style="width: 35px;">
+                    <col style="width: 40px;">
+                    <col style="width: 40px;">
+                    <col style="width: 42px;">
+                    <col style="width: 42px;">
+                    <col style="width: 35px;">
+                    <col style="width: 30px;">
+                    <col style="width: 30px;">
+                    <col style="width: 35px;">
+                    <col style="width: 90px;">
                 </colgroup>
                 ${tableHeaders}
                 <tbody>${rows}</tbody>
@@ -1947,28 +1966,28 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="laporan-summary">
                 <table style="line-height:1;">
                      <tr>
-					 <td>Total Kehadiran</td><td>:</td><td><strong>${data.summary.hadir} hari</strong></td>
+					 <td>Total Kehadiran</td><td>:</td><td><strong>${data.summary.hadir} Hari</strong></td>
 					 </tr>
 					 <tr>
-					 <td>Total Terlambat</td><td>:</td><td><strong>${data.summary.terlambat} kali</strong></td>
+					 <td>Total Terlambat</td><td>:</td><td><strong>${data.summary.terlambat} Kali</strong></td>
 					 </tr>
 					 <tr>
-					 <td>Total Absen</td><td>:</td><td><strong>${data.summary.absen} hari</strong></td>
+					 <td>Total Absen</td><td>:</td><td><strong>${data.summary.absen} Hari</strong></td>
 					 </tr>
                 </table>
             </div>
             <div class="laporan-ttd">
-                <div class="ttd-box" style="text-align:left;width:95%;margin-left:117px;border:0px solid black;">
+                <div class="ttd-box" style="text-align:left;width:95%;margin-left:127px;border:0px solid black;">
                     <p>Mengetahui,</p>
                     <p>Kepala Madrasah</p>
                     <p class="nama">${s.kepsek}</p>
-                    <p>NIP. ${s.nip}</p>
+                    <p style="font-weight:bold;">NIP. ${s.nip}</p>
                 </div>
                 <div class="ttd-box" style="text-align:left;border:0px solid black;">
                     <p>${s.desa}, ${endDate.toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC'})}</p>
                     <p>Nama ${guru.jabatan}</p>
                     <p class="nama">${guru.nama}</p>
-                    <p>NIP. ${guru.nip || '-'}</p>
+                    <p style="font-weight:bold;">NIP. ${guru.nip || '-'}</p>
                 </div>
             </div>
 			<div class="laporan-ttd">
@@ -1977,11 +1996,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     <p>Pengawas Madrasah</p>
 					<p>Kec. ${s.kecamatan}</p>
                     <p class="nama">${s.pengawas}</p>
-                    <p>NIP. ${s.nipPengawas}</p>
+                    <p style="font-weight:bold;">NIP. ${s.nipPengawas}</p>
                 </div>
             </div>
             <div class="laporan-footer">
-                <p>Oleh : Supervisor <br><text style="margin-left:26px;">${formattedFooterEndDate}</text></p>
+                <p>Oleh : Supervisor <br><text style="margin-left:32px;">${formattedFooterEndDate}</text></p>
                 <p>Hal. ${pageNumber}</p>
             </div>
         </div>
@@ -2340,9 +2359,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 const date = tr.dataset.date;
                 if (date) {
                     const key = `${guruId}-${date}`;
-                    const masuk = tr.querySelector('.manual-jam:nth-of-type(1)').value.trim();
-                    const pulang = tr.querySelector('.manual-jam:nth-of-type(2)').value.trim();
-                    const keterangan = tr.querySelector('.manual-keterangan').value.trim();
+                    
+                    const jamInputs = tr.querySelectorAll('.manual-jam');
+                    const masuk = jamInputs[0]?.value.trim() ?? '';
+                    const pulang = jamInputs[1]?.value.trim() ?? '';
+                    const keteranganInput = tr.querySelector('.manual-keterangan');
+                    const keterangan = keteranganInput?.value.trim() ?? '';
 
                     if (masuk || pulang || keterangan) {
                         state.kehadiranOverrides[key] = { masuk, pulang, keterangan };
@@ -2377,11 +2399,58 @@ document.addEventListener('DOMContentLoaded', function () {
         
         if (resetHarianBtn) {
             const row = resetHarianBtn.closest('tr');
-            row.querySelector('td:nth-child(3) .manual-jam').value = '';
-            row.querySelector('td:nth-child(4) .manual-jam').value = '';
-            row.querySelector('td:nth-child(5) .manual-keterangan').value = '';
-            row.classList.remove('holiday-row'); // remove class if any
-            row.querySelectorAll('input, textarea, button').forEach(el => el.disabled = false);
+            const dateStr = row.dataset.date;
+            showCustomConfirm('Konfirmasi Reset', `Anda yakin ingin mereset isian untuk tanggal ${dateStr}?`, 'Ya, Reset')
+                .then(confirmed => {
+                    if (confirmed) {
+                        const guruId = document.getElementById('manual-absensi-guru').value;
+                        const overrideKey = `${guruId}-${dateStr}`;
+
+                        // 1. Update state if it exists
+                        if (state.kehadiranOverrides[overrideKey]) {
+                            delete state.kehadiranOverrides[overrideKey];
+                            saveState();
+                        }
+
+                        // 2. Clear UI for the row
+                        row.querySelector('td:nth-child(3) .manual-jam').value = '';
+                        row.querySelector('td:nth-child(4) .manual-jam').value = '';
+                        row.querySelector('td:nth-child(5) .manual-keterangan').value = '';
+                        row.classList.remove('holiday-row');
+                        row.querySelectorAll('input, textarea, button').forEach(el => {
+                            // Use T12:00:00Z to avoid timezone issues with getUTCDay
+                            const dayName = HARI[new Date(dateStr + 'T12:00:00Z').getUTCDay()];
+                            if (state.pengaturanKerja.hariKerja.includes(dayName)) {
+                                el.disabled = false;
+                            }
+                        });
+
+                        // 3. Update live attendance section if it's today
+                        const todayStr = new Date().toISOString().slice(0, 10);
+                        if (dateStr === todayStr) {
+                            const liveContainer = document.getElementById('live-absensi-container');
+                            if (liveContainer) {
+                                 const now = new Date();
+                                 const isMasukTime = now.getHours() < 12 || (now.getHours() === 12 && now.getMinutes() === 0);
+                                 
+                                 const buttonHtml = isMasukTime
+                                    ? `<button id="btn-live-absensi" data-action="masuk" class="btn btn-primary">Absen Masuk Sekarang</button>`
+                                    : `<button id="btn-live-absensi" data-action="pulang" class="btn btn-success">Absen Pulang Sekarang</button>`;
+                                 
+                                 const oldButton = liveContainer.querySelector('button');
+                                 if (oldButton) {
+                                    oldButton.outerHTML = buttonHtml;
+                                 }
+                                 
+                                 const statusDiv = liveContainer.querySelector('div[style*="margin-top"]');
+                                 if (statusDiv) {
+                                    statusDiv.innerHTML = '';
+                                 }
+                            }
+                        }
+                        showCustomAlert('success', 'Reset Berhasil', `Isian untuk tanggal ${dateStr} telah direset.`);
+                    }
+                });
         }
 
         if (liveAbsensiBtn) {
@@ -2689,6 +2758,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentView = 'hours'; // 'hours' or 'minutes'
     let currentHour = 12;
     let currentMinute = 0;
+    let isDragging = false; // Flag to distinguish click from drag
 
     function openTimePicker(targetInput) {
         activeTimeInput = targetInput;
@@ -2784,25 +2854,86 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
     
-    clock.addEventListener('click', (e) => {
-        const target = e.target;
-        const value = target.dataset.value;
+    // New function to handle minute selection from coordinates
+    function handleMinuteSelection(e) {
+        e.preventDefault();
+        const rect = clock.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        
+        // Support both mouse and touch events
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-        if (value) {
-            if (currentView === 'hours') {
-                currentHour = parseInt(value, 10);
-                updateDigitalDisplay();
-                updateClockHands();
-                setTimeout(() => switchView('minutes'), 200); // Auto-switch to minutes
-            } else {
-                currentMinute = parseInt(value, 10);
-                updateDigitalDisplay();
-                updateClockHands();
-                setTimeout(() => closeTimePicker(true), 200);
-            }
+        const angleRad = Math.atan2(clientY - centerY, clientX - centerX);
+        let angleDeg = angleRad * (180 / Math.PI) + 90; // +90 to make 12 o'clock the top
+        if (angleDeg < 0) {
+            angleDeg += 360;
+        }
+
+        const minute = Math.round(angleDeg / 6) % 60;
+        if (minute !== currentMinute) { // Only update if value changes
+            currentMinute = minute;
+            updateDigitalDisplay();
+            updateClockHands();
+        }
+    }
+
+    // Function to end dragging and confirm selection
+    function endDragAndSelect() {
+        // This check is important to prevent multiple triggers
+        if (isDragging) {
+            isDragging = false;
+            window.removeEventListener('mousemove', handleMinuteSelection);
+            window.removeEventListener('mouseup', endDragAndSelect);
+            window.removeEventListener('touchmove', handleMinuteSelection);
+            window.removeEventListener('touchend', endDragAndSelect);
+            
+            // Use a short timeout to ensure the UI has updated before closing
+            setTimeout(() => closeTimePicker(true), 200);
+        }
+    }
+
+    // Add mousedown/touchstart listeners to the clock for minute selection
+    clock.addEventListener('mousedown', (e) => {
+        if (currentView === 'minutes') {
+            isDragging = true;
+            handleMinuteSelection(e); // Select minute on initial click
+            window.addEventListener('mousemove', handleMinuteSelection);
+            window.addEventListener('mouseup', endDragAndSelect);
         }
     });
 
+    clock.addEventListener('touchstart', (e) => {
+        if (currentView === 'minutes') {
+            isDragging = true;
+            handleMinuteSelection(e);
+            window.addEventListener('touchmove', handleMinuteSelection);
+            window.addEventListener('touchend', endDragAndSelect);
+        }
+    });
+
+    // Modified click listener for selecting hours
+    clock.addEventListener('click', (e) => {
+        // Prevent this from firing if a drag action was just completed.
+        if (isDragging) {
+            // Reset flag in case mouseup didn't fire (e.g., mouse left window)
+            isDragging = false; 
+            return;
+        }
+
+        const target = e.target;
+        const value = target.dataset.value;
+
+        if (value && currentView === 'hours') {
+            currentHour = parseInt(value, 10);
+            updateDigitalDisplay();
+            updateClockHands();
+            // Automatically switch to minute selection view
+            setTimeout(() => switchView('minutes'), 200);
+        }
+    });
+    
     digitalHour.addEventListener('click', () => switchView('hours'));
     digitalMinute.addEventListener('click', () => switchView('minutes'));
     document.getElementById('time-picker-ok').addEventListener('click', () => closeTimePicker(true));
