@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function () {
             hariKerja: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'],
             jamMasukReguler: '07:00',
             jamPulangReguler: '15:00',
-            jamMasukHonorer: '07:30',
+            jamMasukHonorer: '07:00',
             jamPulangHonorer: '14:00',
             toleransi: 15
         },
@@ -1480,15 +1480,15 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
             <table class="laporan-table">
                 <colgroup>
-                    <col style="width: 35px;">
-                    <col style="width: 35px;">
+                    <col style="width: 37px;">
+                    <col style="width: 33px;">
                     <col style="width: 40px;">
                     <col style="width: 40px;">
-                    <col style="width: 40px;">
-                    <col style="width: 40px;">
+                    <col style="width: 42px;">
+                    <col style="width: 42px;">
                     <col style="width: 35px;">
-                    <col style="width: 35px;">
-                    <col style="width: 35px;">
+                    <col style="width: 33px;">
+                    <col style="width: 33px;">
                     <col style="width: 35px;">
                     <col style="width: 90px;">
                 </colgroup>
